@@ -52,17 +52,11 @@ https://leanprover-community.github.io/mathlib_docs/measure_theory/measurable_sp
 
 example (S₁ S₂ S₃ : set Ω) 
   (hS₁ : measurable_set S₁) (hS₂ : measurable_set S₂) (hS₃ : measurable_set S₃) :
-  measurable_set (S₁ ∪ (S₂ \ S₃)) := 
-begin
-  sorry
-end
+  measurable_set (S₁ ∪ (S₂ \ S₃)) :=  hS₁.union  (hS₂.diff hS₃)
 
 example (s : ℕ → set Ω) (S : set Ω) 
   (hs : ∀ n, measurable_set (s n)) (hS : measurable_set S) : 
-  measurable_set (S ∩ ⋂ n, s n) :=
-begin
-  sorry
-end
+  measurable_set (S ∩ ⋂ n, s n) := by measurability? --hS.inter (measurable_set.Inter hs)
 
 -- Now lets add a measure `μ` on `Ω`
 variables {μ : measure Ω}
@@ -92,7 +86,11 @@ Try proving the following:
 example (S T : set Ω) (hS : μ S ≠ ∞) (hT : measurable_set T) : 
   μ (S ∪ T) = μ S + μ T - μ (S ∩ T) :=
 begin
-  sorry
+  rw ← (measure_union_add_inter S hT),
+  symmetry,
+  refine ennreal.add_sub_cancel_right (λ h, hS _),
+  have h1 : μ (S ∩ T) ≤ μ S := measure_mono (S.inter_subset_left T),
+  rwa [h,top_le_iff] at h1,
 end
 
 /-
@@ -134,16 +132,24 @@ all you have to know is in most cases (range is metrizable and second-countable)
 `measurable` and `strongly_measurable` are equivalent.
 -/
 
-example : measurable (id : Ω → Ω) :=
+example : measurable (id : Ω → Ω) := λ a ha, ha -- `λ a, id` also works, because of currying
+/-
 begin
-  sorry
+  intros a ha,
+  --rwa set.preimage_id,
+  exact ha, -- also works!
 end
+-/
 
 example (g : X → X) (hg : measurable g) (hf : measurable f) :
-  measurable (g ∘ f) :=
+  measurable (g ∘ f) := λ a ha, hf (hg ha)
+/-
 begin
-  sorry
+  intros a ha,
+  rw set.preimage_comp,
+  exact hf (hg ha),
 end
+-/
 
 /-!
 ## Integration
@@ -173,22 +179,24 @@ variables [normed_add_comm_group X] [normed_space ℝ X] [complete_space X]
 
 -- Try looking in mathlib
 example {f g : Ω → X} (hf : integrable f μ) (hg : integrable g μ) : 
-  ∫ x, f x + g x ∂μ = ∫ x, f x ∂μ + ∫ x, g x ∂μ :=
-begin
-  sorry
-end
+  ∫ x, f x + g x ∂μ = ∫ x, f x ∂μ + ∫ x, g x ∂μ := integral_add hf hg
 
-example (a : X) (s : set Ω) : ∫ x in s, a ∂μ = (μ s).to_real • a :=
-begin
-  sorry
-end
+example (a : X) (s : set Ω) : ∫ x in s, a ∂μ = (μ s).to_real • a := set_integral_const a
 
 -- Harder
 example {f : Ω → ℝ} (hf : measurable f) (hint : integrable f μ)
   (hμ : 0 < μ {ω | 0 < f ω}) : 
   (0 : ℝ) < ∫ ω in {ω | 0 < f ω}, f ω ∂μ :=
 begin
-  sorry
+  by_contra hI,
+  rw [not_lt, le_iff_eq_or_lt] at hI,
+  cases hI with h1 h2,
+  { rw ← integral_indicator at h1,
+    { sorry },
+    { refine hf _,
+      change measurable_set {x : ℝ | 0 < x},
+      measurability, }, } ,
+  { sorry }
 end
 
 /-
